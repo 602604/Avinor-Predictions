@@ -84,10 +84,21 @@ Evalueringsmål: ROC-AUC, som er mer robust enn ren nøyaktighet i denne konteks
 
 ### Hvordan kjøre løsningen: 
 
-- Installer avhengigheter med: poetry install 
-- Kjør evalueringen: python -m src.evaluate - Dette trener modellen og lagrer ROC-kurven og confusion matrisen som png og klassifikasjons rapporten printes. 
-- Kjør treningen of prediksjonen: python main.py - om du ønsker å predikere for annen data må du endre filbanen i main.py til csv-filen du ønsker å predikere for. Filen kjører treningen og predikerer for datasettet for oktober (oppdatert). 
-- Resultatet lagres som data/tootoonchi_minaipour.csv - Dette kan endres i funksjonen model_predict som ligger i train.py.
+- Installer avhengigheter med: 
+```bash
+poetry install
+```
+- Kjør evalueringen: 
+```bash
+python -m src.evaluate 
+```
+Dette trener modellen og lagrer ROC-kurven og confusion matrisen som png og klassifikasjons rapporten printes. 
+- Kjør treningen of prediksjonen: 
+```bash
+python main.py
+```
+om du ønsker å predikere for annen data må du endre filbanen i main.py til csv-filen du ønsker å predikere for. Filen kjører treningen og predikerer for datasettet for oktober (oppdatert). 
+- Resultatet lagres som data/tootoonchi_minaipour.csv, Dette kan endres i funksjonen model_predict som ligger i train.py.
 
 ### Videreutvikling og skalering: 
 Kan utvides med flere features (værdata, flytype, trafikkvolum). En EDA for værdata har blitt gjennomført og dette anbefales å bygge på. I tillegg kan man hente inn data fra flere kilder, for eksempel sanntidsdata fra flyplassystemer eller eksterne API-er, for å gjøre prediksjonene mer presise. På modellnivå kan det testes mer avanserte algoritmer, som dyp læring eller eventuelle ensemble-metoder, og sammenlignes mot XGBoost for å finne den beste tilnærmingen. 

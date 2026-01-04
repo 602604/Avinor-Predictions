@@ -1,15 +1,37 @@
-[project]
-name = "live-trading-platform"
-version = "0.1.0"
-description = "Add your description here"
+[tool.poetry]
+name = "Avinor_Predictions"
+version = "0.1.1"
+description = "Developing a model that shows the probability of simultaneous active dialogue for flights based on Avinor's data competition."
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "pandas",
-    "matplotlib",
-    "seaborn",
-    "numpy",
-    "requests",
-    "scikit-learn",
-    "xgboost"
+
+authors = [
+    "Milad Tootoonchi <milad.tootoonchi@nmbu.no>",
+    "Sania Minaipour <Sania.Minaipour@nmbu.no>"
 ]
+
+packages = [
+    { include = "flight_concurrency_predictor", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+pandas = "*"
+matplotlib = "*"
+seaborn = "*"
+numpy = "*"
+requests = "*"
+scikit-learn = "*"
+xgboost = "*"
+python-dotenv = "*"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
+pytest = "*"
+python-dotenv = "*"
+mypy = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
