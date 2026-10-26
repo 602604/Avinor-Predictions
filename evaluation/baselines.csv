@@ -1,0 +1,11 @@
+window_minutes,baseline,description,test_auc
+5.0,random_constant,constant score (should be 0.5),0.5
+5.0,sched_concurrence_only,raw scheduled concurrence count,0.8874
+5.0,sched_flights_only,raw scheduled number of flights,0.8873
+5.0,rate_by_group_hour,train positive rate per airport group and hour,0.6623
+5.0,rate_by_group_hour_season,"train positive rate per group, hour and season",0.6917
+5.0,logistic_regression,same features as XGBoost,0.9173
+5.0,decision_tree_depth5,same features as XGBoost,0.9263
+5.0,xgboost_all_features,"reference model, tuned params",0.9274
+5.0,xgboost_no_sched_concurrence,ablation: drops sched_concurrence,0.9017
+5.0,xgboost_no_hour,ablation: drops hour of day,0.9251

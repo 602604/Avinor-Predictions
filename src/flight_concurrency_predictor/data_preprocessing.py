@@ -1,32 +1,43 @@
 import pandas as pd
+import numpy as np
 from datetime import date
+from pathlib import Path
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 
 
-def compute_concurrency(times: pd.Series) -> int:
+def compute_concurrency(times: pd.Series, window_minutes: float = 5.0) -> int:
     """
-    Compute the number of overlapping time pairs within a specified window.
-    Counts pairs of times where the difference is between -16 and 5 minutes.
-    
+    Count pairs of events (i < j in time order) that occur within `window_minutes`
+    of each other.
+
+    Behaviour is identical to the original implementation, which looped over all
+    pairs and tested -16 <= delta <= 5 minutes. Because the times are sorted and
+    only later events are compared, delta is never negative, so the -16 bound
+    never mattered: the effective window was 0..5 minutes. That window is now an
+    explicit parameter (`window_minutes`) so the concurrency definition can be
+    varied in experiments. This version is vectorised (O(n log n) instead of O(n^2)).
+
     Args:
         times (pd.Series): Series of datetime objects.
-    
+        window_minutes (float): Maximum gap in minutes between two events for
+            them to count as concurrent. Default 5.0 (the original behaviour).
+
     Returns:
-        int: Number of overlapping time pairs.
+        int: Number of concurrent event pairs.
     """
-    
     times = times.dropna().sort_values()
-    count = 0
-    for i, t1 in enumerate(times):
-        for j, t2 in enumerate(times):
-            if i >= j:  # avoid double counting and self
-                continue
-            delta = (t2 - t1).total_seconds() / 60.0  # minutes difference
-            if -16 <= delta <= 5:
-                count += 1
-    return count
+    n = len(times)
+    if n < 2:
+        return 0
+
+    # Seconds since first event: independent of datetime resolution and timezone
+    secs = (times - times.iloc[0]).dt.total_seconds().to_numpy()
+    # For each i: index of the first event later than secs[i] + window
+    upper = np.searchsorted(secs, secs + window_minutes * 60.0, side="right")
+    # Events j > i inside the window: indices i+1 .. upper-1
+    return int((upper - (np.arange(n) + 1)).sum())
 
 
 def get_season(date: date) -> str:
@@ -52,7 +63,7 @@ def get_season(date: date) -> str:
         return 'Fall'
 
 
-def preprocessing(df: pd.DataFrame, predict: bool = False) -> pd.DataFrame:
+def preprocessing(df: pd.DataFrame, predict: bool = False, window_minutes: float = 5.0) -> pd.DataFrame:
     """
     Preprocess flight data to compute scheduled and actual concurrency metrics,
     and annotate with season and other derived columns.
@@ -62,6 +73,7 @@ def preprocessing(df: pd.DataFrame, predict: bool = False) -> pd.DataFrame:
                         'dep_airport_group', 'arr_airport_group', 'std', 'atd', 'sta', 'ata', 'cancelled'.
         predict (bool): If True, ignores actual datetime/hour and concurrency calculations,
                         should be True if the dataset is going to be prepared for testing / predicting
+        window_minutes (float): Window (minutes) used to define concurrency. Default 5.0.
 
     Returns:
         DataFrame: Aggregated flight data grouped by scheduled date, hour, and airport group,
@@ -132,13 +144,13 @@ def preprocessing(df: pd.DataFrame, predict: bool = False) -> pd.DataFrame:
         if predict:
             return pd.Series({
                 "sched_flights": len(g),
-                "sched_concurrence": compute_concurrency(g["datetime"]),
+                "sched_concurrence": compute_concurrency(g["datetime"], window_minutes),
             })
         else:
             return pd.Series({
                 "sched_flights": len(g),
-                "sched_concurrence": compute_concurrency(g["datetime"]),
-                "actual_concurrence": compute_concurrency(g["actual_datetime"])
+                "sched_concurrence": compute_concurrency(g["datetime"], window_minutes),
+                "actual_concurrence": compute_concurrency(g["actual_datetime"], window_minutes)
             })
 
     df_grouped = (
@@ -164,6 +176,44 @@ def preprocessing(df: pd.DataFrame, predict: bool = False) -> pd.DataFrame:
     df_grouped = df_grouped[cols]
 
     return df_grouped
+
+
+def load_preprocessed(csv_path: str,
+                      predict: bool = False,
+                      window_minutes: float = 5.0,
+                      cache_dir: str = "data/cache",
+                      use_cache: bool = True) -> pd.DataFrame:
+    """
+    Read a raw flight CSV and return the preprocessed DataFrame, caching the result.
+
+    Preprocessing is slow, so the result is stored as a pickle in `cache_dir`.
+    The cache is rebuilt automatically if the CSV is newer than the cache file,
+    and the file name includes the concurrency window so different definitions
+    never share a cache. Add `data/cache/` to .gitignore.
+
+    Args:
+        csv_path (str): Path to the raw CSV file.
+        predict (bool): True for schedule-only data without actual times / labels.
+        window_minutes (float): Concurrency window, see `compute_concurrency`.
+        cache_dir (str): Folder for cached files.
+        use_cache (bool): Set False to force recomputation and skip caching.
+
+    Returns:
+        pd.DataFrame: Preprocessed data (same output as `preprocessing`).
+    """
+    csv_path = Path(csv_path)
+    kind = "pred" if predict else "train"
+    cache_file = Path(cache_dir) / f"{csv_path.stem}_{kind}_w{window_minutes:g}.pkl"
+
+    if use_cache and cache_file.exists() and cache_file.stat().st_mtime >= csv_path.stat().st_mtime:
+        return pd.read_pickle(cache_file)
+
+    df = preprocessing(pd.read_csv(csv_path), predict=predict, window_minutes=window_minutes)
+
+    if use_cache:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        df.to_pickle(cache_file)
+    return df
 
 
 def split_data(df: pd.DataFrame, cutoff: str = "2024-07-01") -> tuple:

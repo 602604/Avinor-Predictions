@@ -1,0 +1,4 @@
+timestamp,model,cv,window_minutes,cv_auc,test_auc_proba,test_auc_labels,best_params,note
+2026-10-26T22:19:44,xg,3-fold (original),5.0,0.944,0.9266,0.7918,"{'clf__learning_rate': 0.1, 'clf__max_depth': 3, 'clf__n_estimators': 200}",baseline
+2026-10-26T22:20:41,xg,TimeSeriesSplit(n_splits=5),5.0,0.9462,0.9274,0.7858,"{'clf__learning_rate': 0.1, 'clf__max_depth': 6, 'clf__n_estimators': 100}",TimeSeriesSplit
+2026-10-26T22:24:12,xg,TimeSeriesSplit(n_splits=5),10.0,0.9461,0.9473,0.8811,"{'clf__learning_rate': 0.1, 'clf__max_depth': 6, 'clf__n_estimators': 100}",10 min window
