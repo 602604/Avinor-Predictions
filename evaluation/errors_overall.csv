@@ -1,0 +1,2 @@
+n,actual_rate,mean_predicted,bias,auc,brier,log_loss
+25525,0.235,0.236,0.001,0.9274,0.0933,0.283
